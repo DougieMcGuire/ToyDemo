@@ -99,28 +99,26 @@
         <div id="instructions">Use arrow keys or WASD to move</div>
     </div>
 
-    <!-- Firebase App (the core Firebase SDK) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-app-compat.min.js"></script>
-    <!-- Firebase Database -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-database-compat.min.js"></script>
-
-    <script>
-        // Firebase configuration - REPLACE WITH YOUR OWN FIREBASE CONFIG!
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+        import { getDatabase, ref, set, update, onValue, onChildAdded, onChildChanged, onChildRemoved, serverTimestamp, onDisconnect } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-database.js";
+        
+        // Your Firebase configuration
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            databaseURL: "YOUR_DATABASE_URL",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyB4Sa8mLb2lLpmrrMM9bX_loiTS3MYul14",
+            authDomain: "toydemo-341bc.firebaseapp.com",
+            projectId: "toydemo-341bc",
+            storageBucket: "toydemo-341bc.firebasestorage.app",
+            messagingSenderId: "843712244489",
+            appId: "1:843712244489:web:8474efba9732edda7fc1d8",
+            measurementId: "G-QQRZQR4HZK",
+            databaseURL: "https://toydemo-341bc-default-rtdb.firebaseio.com/" // Add this line for Realtime Database
         };
         
         // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        
-        // Get a reference to the database service
-        const database = firebase.database();
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
         
         // Game variables
         let playerId = null;
@@ -160,22 +158,22 @@
             playerId = 'player_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
             
             // Create a reference to the player in the database
-            playerRef = database.ref(`players/${playerId}`);
+            playerRef = ref(database, `players/${playerId}`);
             
             // Add player to database with initial position
             const playerX = Math.floor(Math.random() * (window.innerWidth - 100)) + 50;
             const playerY = Math.floor(Math.random() * (window.innerHeight - 100)) + 50;
             
-            playerRef.set({
+            set(playerRef, {
                 name: name,
                 x: playerX,
                 y: playerY,
                 color: getRandomColor(),
-                lastUpdated: firebase.database.ServerValue.TIMESTAMP
+                lastUpdated: serverTimestamp()
             });
             
             // Remove player when disconnected
-            playerRef.onDisconnect().remove();
+            onDisconnect(playerRef).remove();
             
             // Start listening for player updates
             initPlayerListeners();
@@ -186,10 +184,10 @@
         
         function initPlayerListeners() {
             // Listen for all players
-            const playersRef = database.ref('players');
+            const playersRef = ref(database, 'players');
             
             // When a player is added
-            playersRef.on('child_added', (snapshot) => {
+            onChildAdded(playersRef, (snapshot) => {
                 const playerData = snapshot.val();
                 const playerId = snapshot.key;
                 
@@ -214,7 +212,7 @@
             });
             
             // When a player is updated
-            playersRef.on('child_changed', (snapshot) => {
+            onChildChanged(playersRef, (snapshot) => {
                 const playerData = snapshot.val();
                 const playerId = snapshot.key;
                 
@@ -228,7 +226,7 @@
             });
             
             // When a player is removed
-            playersRef.on('child_removed', (snapshot) => {
+            onChildRemoved(playersRef, (snapshot) => {
                 const playerId = snapshot.key;
                 
                 // Remove player from the game
@@ -295,10 +293,10 @@
                 
                 // Update player position if moved
                 if (moved) {
-                    playerRef.update({
+                    update(playerRef, {
                         x,
                         y,
-                        lastUpdated: firebase.database.ServerValue.TIMESTAMP
+                        lastUpdated: serverTimestamp()
                     });
                 }
             }, 33); // About 30 FPS
